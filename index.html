@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raj TR - Trading Journal</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #0b1120;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    header {
+      margin-bottom: 25px;
+    }
+
+    header h1 {
+      font-size: 30px;
+    }
+
+    header p {
+      color: #94a3b8;
+      margin-top: 5px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .card p {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .card h2 {
+      margin-top: 8px;
+      font-size: 27px;
+    }
+
+    .section {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      margin-bottom: 18px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: white;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      padding: 13px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 750px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #1e293b;
+      text-align: left;
+    }
+
+    th {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .profit {
+      color: #22c55e;
+    }
+
+    .loss {
+      color: #ef4444;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 12px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      form {
+        grid-template-columns: 1fr;
+      }
+
+      .full {
+        grid-column: auto;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Raj TR</h1>
+    <p>Trading Journal Dashboard</p>
+  </header>
+
+  <div class="stats">
+    <div class="card">
+      <p>Total Trades</p>
+      <h2 id="totalTrades">0</h2>
+    </div>
+
+    <div class="card">
+      <p>Wins</p>
+      <h2 id="wins">0</h2>
+    </div>
+
+    <div class="card">
+      <p>Losses</p>
+      <h2 id="losses">0</h2>
+    </div>
+
+    <div class="card">
+      <p>Net PnL</p>
+      <h2 id="netPnl">$0.00</h2>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Add Trade</h2>
+
+    <form id="tradeForm">
+
+      <div>
+        <label>Symbol</label>
+        <select id="symbol" required>
+          <option value="XAUUSD">Gold (XAUUSD)</option>
+          <option value="BTCUSD">Bitcoin (BTCUSD)</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Direction</label>
+        <select id="direction" required>
+          <option value="Buy">Buy</option>
+          <option value="Sell">Sell</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Entry Price</label>
+        <input type="number" step="any" id="entryPrice" required>
+      </div>
+
+      <div>
+        <label>Exit Price</label>
+        <input type="number" step="any" id="exitPrice" required>
+      </div>
+
+      <div>
+        <label>Quantity</label>
+        <input type="number" step="any" id="quantity" required>
+      </div>
+
+      <div>
+        <label>Contract Size</label>
+        <input type="number" step="any" id="contractSize">
+      </div>
+
+      <div>
+        <label>PnL ($)</label>
+        <input type="number" step="any" id="pnl" required>
+      </div>
+
+      <div>
+        <label>Notes</label>
+        <input type="text" id="notes">
+      </div>
+
+      <div class="full">
+        <button type="submit">Add Trade</button>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Trade History</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Direction</th>
+            <th>Entry</th>
+            <th>Exit</th>
+            <th>Quantity</th>
+            <th>PnL</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+
+        <tbody id="tradeTable">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+  // ============================================
+  // SUPABASE CONNECTION
+  // ============================================
+
+  const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+  const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+  const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+  // ============================================
+  // LOAD TRADES
+  // ============================================
+
+  async function loadTrades() {
+
+    const { data, error } = await supabaseClient
+      .from("trades")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      alert("Error loading trades: " + error.message);
+      return;
+    }
+
+    displayTrades(data);
+    updateDashboard(data);
+  }
+
+
+  // ============================================
+  // DISPLAY TRADES
+  // ============================================
+
+  function displayTrades(trades) {
+
+    const table = document.getElementById("tradeTable");
+
+    table.innerHTML = "";
+
+    trades.forEach(trade => {
+
+      const pnl = Number(trade.pnl || 0);
+
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${trade.symbol || "-"}</td>
+        <td>${trade.direction || "-"}</td>
+        <td>${trade.entry_price ?? "-"}</td>
+        <td>${trade.exit_price ?? "-"}</td>
+        <td>${trade.quantity ?? "-"}</td>
+        <td class="${pnl >= 0 ? "profit" : "loss"}">
+          ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}
+        </td>
+        <td>${trade.notes || "-"}</td>
+      `;
+
+      table.appendChild(row);
+    });
+  }
+
+
+  // ============================================
+  // DASHBOARD CALCULATION
+  // ============================================
+
+  function updateDashboard(trades) {
+
+    const total = trades.length;
+
+    const wins = trades.filter(
+      trade => Number(trade.pnl || 0) > 0
+    ).length;
+
+    const losses = trades.filter(
+      trade => Number(trade.pnl || 0) < 0
+    ).length;
+
+    const netPnl = trades.reduce(
+      (sum, trade) => sum + Number(trade.pnl || 0),
+      0
+    );
+
+    document.getElementById("totalTrades").textContent = total;
+    document.getElementById("wins").textContent = wins;
+    document.getElementById("losses").textContent = losses;
+
+    document.getElementById("netPnl").textContent =
+      `${netPnl >= 0 ? "+" : ""}$${netPnl.toFixed(2)}`;
+  }
+
+
+  // ============================================
+  // ADD TRADE
+  // ============================================
+
+  document.getElementById("tradeForm").addEventListener(
+    "submit",
+    async function(event) {
+
+      event.preventDefault();
+
+      const trade = {
+
+        symbol: document.getElementById("symbol").value,
+
+        direction: document.getElementById("direction").value,
+
+        entry_price:
+          Number(document.getElementById("entryPrice").value),
+
+        exit_price:
+          Number(document.getElementById("exitPrice").value),
+
+        quantity:
+          Number(document.getElementById("quantity").value),
+
+        contract_size:
+          Number(document.getElementById("contractSize").value) || null,
+
+        pnl:
+          Number(document.getElementById("pnl").value),
+
+        notes:
+          document.getElementById("notes").value
+      };
+
+
+      const { error } = await supabaseClient
+        .from("trades")
+        .insert([trade]);
+
+
+      if (error) {
+
+        console.error(error);
+
+        alert("Error adding trade: " + error.message);
+
+        return;
+      }
+
+
+      alert("Trade added successfully! ✅");
+
+      document.getElementById("tradeForm").reset();
+
+      loadTrades();
+
+    }
+  );
+
+
+  // ============================================
+  // START
+  // ============================================
+
+  loadTrades();
+
+</script>
+
+</body>
+</html>
