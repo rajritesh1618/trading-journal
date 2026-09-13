@@ -238,10 +238,6 @@
         <input type="number" step="any" id="contractSize">
       </div>
 
-      <div>
-        <label>PnL ($)</label>
-        <input type="number" step="any" id="pnl" required>
-      </div>
 
       <div>
         <label>Notes</label>
@@ -408,8 +404,6 @@
         contract_size:
           Number(document.getElementById("contractSize").value) || null,
 
-        pnl:
-          Number(document.getElementById("pnl").value),
 
         notes:
           document.getElementById("notes").value
